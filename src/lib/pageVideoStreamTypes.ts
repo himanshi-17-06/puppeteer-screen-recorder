@@ -7,6 +7,7 @@ export enum VIDEO_WRITE_STATUS {
   'IN_PROGRESS',
   'COMPLETED',
   'ERROR',
+  'ABORTED'
 }
 
 /**

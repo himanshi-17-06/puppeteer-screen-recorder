@@ -166,4 +166,23 @@ export class PuppeteerScreenRecorder {
     this.isScreenCaptureEnded = await this.streamWriter.stop();
     return this.isScreenCaptureEnded;
   }
+
+
+
+  /**
+   * @public
+   * @method abort
+   * @description abort the video capturing session
+   * @returns indicate whether stop is completed correct or not, if true without any error else false.
+   */
+  public async abort(): Promise<void> {
+    if (this.streamReader) {
+      await this.streamReader.stop();
+    }
+    if (this.streamWriter) {
+      await this.streamWriter.abort();  // Abort instead of stop
+    }
+    this.isScreenCaptureEnded = true;
+    console.log('Recording aborted.');
+  }
 }

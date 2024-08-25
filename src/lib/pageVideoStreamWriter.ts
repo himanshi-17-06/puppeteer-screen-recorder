@@ -37,6 +37,8 @@ export default class PageVideoStreamWriter extends EventEmitter {
 
   private videoMediatorStream: PassThrough = new PassThrough();
   private writerPromise: Promise<boolean>;
+  private ffmpegProcess: ffmpeg.FfmpegCommand | null = null;
+
 
   constructor(destinationSource: string | Writable, options?: VideoOptions) {
     super();
@@ -227,7 +229,7 @@ export default class PageVideoStreamWriter extends EventEmitter {
     if (this.options.recordDurationLimit) {
       outputStream.duration(this.options.recordDurationLimit);
     }
-
+    this.ffmpegProcess = outputStream
     return outputStream;
   }
 
@@ -358,5 +360,31 @@ export default class PageVideoStreamWriter extends EventEmitter {
     this.videoMediatorStream.end();
     this.status = VIDEO_WRITE_STATUS.COMPLETED;
     return this.writerPromise;
+  }
+
+  public abort(): Promise<void> {
+    if (this.status === VIDEO_WRITE_STATUS.COMPLETED || this.status === VIDEO_WRITE_STATUS.ABORTED) {
+      return Promise.resolve();
+    }
+
+    if (this.videoMediatorStream) {
+      this.videoMediatorStream.destroy();
+      this.videoMediatorStream = null;
+    }
+
+    if (this.writerPromise) {
+      this.writerPromise = Promise.resolve(false);
+    }
+
+    if (this.ffmpegProcess) {
+      this.ffmpegProcess.kill('SIGKILL'); // Force kill ffmpeg process
+      this.ffmpegProcess = null; // Ensure it's not referenced
+    }
+
+    this.status = VIDEO_WRITE_STATUS.ABORTED;
+    console.log('Recording aborted, resources released without finalizing.');
+
+    // Resolve the promise immediately, no further processing needed
+    return Promise.resolve();
   }
 }
